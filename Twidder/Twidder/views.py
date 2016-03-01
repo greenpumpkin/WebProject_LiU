@@ -4,8 +4,10 @@ import re
 import database_helper
 import random
 import json
-from geventwebsocket import WebSocketServer, WebSocketError
+from geventwebsocket import WebSocketError
+from flask.ext.bcrypt import Bcrypt
 
+bcrypt = Bcrypt(app)
 sockets = dict()
 
 
@@ -78,7 +80,8 @@ def sign_up():
             and (check_gender(gender)) \
             and len(firstname) > 0 and len(familyname) > 0 \
             and len(city) > 0 and len(country) > 0:
-        signUp = database_helper.insert_user(email, password, firstname, familyname, gender, city, country)
+        hashedPwd = bcrypt.generate_password_hash(password)
+        signUp = database_helper.insert_user(email, hashedPwd, firstname, familyname, gender, city, country)
         if signUp:
             return json.dumps({"success": True, "message": "Successfully created a new user."})
         else:
