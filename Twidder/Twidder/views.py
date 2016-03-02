@@ -1,5 +1,5 @@
 from . import app
-from flask import request, render_template
+from flask import Flask, request, render_template
 import re
 import database_helper
 import random
@@ -7,6 +7,7 @@ import json
 from geventwebsocket import WebSocketError
 from flask.ext.bcrypt import Bcrypt
 
+#app = Flask(__name__)
 bcrypt = Bcrypt(app)
 sockets = dict()
 
@@ -98,6 +99,9 @@ def sign_in():
     password = request.form['passwordLog']
     data_user = database_helper.get_user(email)
 
+    if data_user == None:
+        return json.dumps({'success': False, 'message': "User doesn't exist."})
+
     if bcrypt.check_password_hash(data_user[1],password):
         token = create_token()
 
@@ -120,8 +124,7 @@ def sign_in():
         return json.dumps({'success': True, 'message': "Login successful!", 'token': token, 'email': email})
 
     else:
-        return json.dumps({'success': False, 'message': "Wrong email or password"})
-
+        return json.dumps({'success': False, 'message': "User doesn't exist."})
 
 # Creates a random token
 def create_token():
@@ -160,25 +163,24 @@ def sign_out():
 def change_password():
     token = request.form['token']
     pwd = request.form['pwd']
-    hashed_pwd = bcrypt.generate_password_hash(pwd)
     chgpwd = request.form['chgPwd']
-    hashed_chgpwd = bcrypt.generate_password_hash(chgpwd)
+    email = database_helper.get_logged_in(token)[1]
 
     if not database_helper.get_logged_in(token):
         return json.dumps({'success': False, 'message': "You are not logged in."})
+
     else:
         if len(chgpwd) < 6:
             return json.dumps({"success": False, "message": "Error: password must be at least 6 characters long"})
-        email = database_helper.get_email(token)
-        validlog = database_helper.check_pwd(email, pwd)
-        if not bcrypt.check_password_hash(hashed_pwd,pwd) \
-                or not bcrypt.check_password_hash(hashed_chgpwd,chgpwd)\
-                or not validlog:
-            return json.dumps({'success': False, 'message': "Wrong password."})
-        else:
-            database_helper.modify_pwd(email[0], hashed_pwd, hashed_chgpwd)
-            return json.dumps({'success': True, 'message': "Password changed."})
 
+        current_password = database_helper.get_user(email)[1]
+        print email
+        print current_password
+
+        if bcrypt.check_password_hash(current_password, pwd):
+            database_helper.modify_pwd(email, current_password, bcrypt.generate_password_hash(chgpwd))
+            return json.dumps({"success": True, "message": "Password changed."})
+        return json.dumps({"success": False, "message": "Error : invalid inputs."})
 
 # Retrieves the stored data for the user whom the passed token is issued for.
 # The currently signed-in user case use this method to retrieve all its own info from the server
@@ -244,4 +246,3 @@ def get_user_messages_by_email(token, email):
         return json.dumps({"success": False, "message": "No such user."})
     else:
         return json.dumps({"success": False, "message": "You are not signed in."})
-
