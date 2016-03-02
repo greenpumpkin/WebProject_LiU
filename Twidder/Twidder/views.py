@@ -46,7 +46,7 @@ def connect_socket():
             #We save the active websocket for the logged in user
             print "Saving the socket for the user : " + str(email)
             sockets[str(email)] = ws
-            print(sockets)
+            #print(sockets)
 
             # We listen on the socket and keep it active
             while True:
@@ -160,7 +160,10 @@ def sign_out():
 def change_password():
     token = request.form['token']
     pwd = request.form['pwd']
+    hashed_pwd = bcrypt.generate_password_hash(pwd)
     chgpwd = request.form['chgPwd']
+    hashed_chgpwd = bcrypt.generate_password_hash(chgpwd)
+
     if not database_helper.get_logged_in(token):
         return json.dumps({'success': False, 'message': "You are not logged in."})
     else:
@@ -168,10 +171,13 @@ def change_password():
             return json.dumps({"success": False, "message": "Error: password must be at least 6 characters long"})
         email = database_helper.get_email(token)
         validlog = database_helper.check_pwd(email, pwd)
-        if not validlog:
+        if not bcrypt.check_password_hash(hashed_pwd,pwd) \
+                or not bcrypt.check_password_hash(hashed_chgpwd,chgpwd)\
+                or not validlog:
             return json.dumps({'success': False, 'message': "Wrong password."})
-        database_helper.modify_pwd(email[0], pwd, chgpwd)
-        return json.dumps({'success': True, 'message': "Password changed."})
+        else:
+            database_helper.modify_pwd(email[0], hashed_pwd, hashed_chgpwd)
+            return json.dumps({'success': True, 'message': "Password changed."})
 
 
 # Retrieves the stored data for the user whom the passed token is issued for.
