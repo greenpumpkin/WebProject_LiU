@@ -178,6 +178,17 @@ def get_user_data_by_email(email):
     except sqlite3.Error:
         return False
 
+# Get ALL the data of a user in the database from its email
+def get_user(email):
+    db = get_db()
+    cursor = db.cursor()
+    try:
+        request = cursor.execute('SELECT * FROM users WHERE email=?',
+                                 (email,))
+        return request.fetchone()
+    except sqlite3.Error:
+        return False
+
 
 # Post a message which is stored on the database
 def post_message(message, token, sender, email):

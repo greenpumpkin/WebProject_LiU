@@ -96,9 +96,9 @@ def sign_in():
     #print "SOMEONE JUST SIGNED IN"
     email = request.form['emailLog']
     password = request.form['passwordLog']
-    signin = database_helper.sign_in_db(email, password)
+    data_user = database_helper.get_user(email)
 
-    if signin:
+    if bcrypt.check_password_hash(data_user[1],password):
         token = create_token()
 
         if database_helper.get_logged_in_by_mail(email):
