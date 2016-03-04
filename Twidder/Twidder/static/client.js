@@ -228,9 +228,15 @@ changePwd = function() {
 
 /********************** Displays all the info about the user who is logged in **********************/
 displayInfo = function() {
+
 	var token = localStorage.getItem("token");
 	var xmlhttp = new XMLHttpRequest();
-	xmlhttp.open("GET", "/getuserdatabytoken/"+token, true);
+	var mailUser = localStorage.getItem("email");
+	var path = "/getuserdatabytoken/"+mailUser;
+	var hashedData = CryptoJS.SHA256(path + "/" +token);
+
+	console.log("hashedData : "+hashedData)
+	xmlhttp.open("GET", path+"/"+hashedData, true);
 	xmlhttp.send();
 
 	xmlhttp.onreadystatechange = function () {
@@ -327,17 +333,22 @@ msgOnWall = function(to) {
 keepMsg = function(to) {
 
 	var token = localStorage.getItem("token");
+	var hashedData;
 	var wall;
 
 	if (token != null) {
 		var xmlhttp = new XMLHttpRequest();
 		if (to == "mess") {
 			wall = document.getElementById("wall");
-			xmlhttp.open("GET", "/getusermessagesbytoken/" + token, true);
+			var data = "/getusermessagesbytoken/"+localStorage.getItem("email")+"/"+token;
+			hashedData = CryptoJS.SHA256(data);
+			xmlhttp.open("GET", "/getusermessagesbytoken/"+localStorage.getItem("email")+"/"+hashedData, true);
 		} else if (to == "messUser") {
 			wall = document.getElementById("wallUser")
 			var email = document.getElementById("mailSearch").value;
-			xmlhttp.open("GET", "/getusermessagesbyemail/" + token + "/" + email, true);
+			var path = "/getusermessagesbyemail/"+localStorage.getItem("email")+"/"+email;
+			hashedData= CryptoJS.SHA256(path+"/"+token);
+			xmlhttp.open("GET",path+"/"+hashedData, true);
 		}
 
 		xmlhttp.send();
@@ -403,7 +414,9 @@ searchSomeone = function() {
 	var token = localStorage.getItem("token");
 	var email = document.getElementById("mailSearch").value;
 	var xmlhttp = new XMLHttpRequest();
-	xmlhttp.open("GET", "/getusermessagesbyemail/"+token+"/"+email, true);
+	var path = "/getusermessagesbyemail/"+localStorage.getItem("email")+"/"+email;
+	var hashedData= CryptoJS.SHA256(path+"/"+token);
+	xmlhttp.open("GET",path+"/"+hashedData, true);
 	xmlhttp.send();
 
 	xmlhttp.onreadystatechange = function () {

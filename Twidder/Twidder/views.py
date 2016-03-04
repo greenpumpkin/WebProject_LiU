@@ -7,7 +7,6 @@ import json
 from geventwebsocket import WebSocketError
 from flask.ext.bcrypt import Bcrypt
 import hashlib
-import time
 
 #app = Flask(__name__)
 bcrypt = Bcrypt(app)
@@ -67,6 +66,43 @@ def connect_socket():
 
     return ""
 
+# Checks if hash from client = hash from server
+def check_tok(path,email,hashed_data,post):
+    data = database_helper.get_logged_in_by_mail(email)
+    if data == None:
+        return json.dumps({"success": False, "message": "You are not logged in."})
+    token = data[0]
+    if post:
+        data_to_hash = '/'+path+"&email="+email+"&token="+token
+    else:
+        data_to_hash = '/'+path+'/'+email+'/'+token
+
+    #Encoding data to hash (string) to bytes
+    hash = hashlib.sha256(data_to_hash.encode('utf-8')).hexdigest()
+
+    print("dataToHash: "+data_to_hash)
+    print("hash from client: "+hash)
+    print("hash from server: "+hashed_data)
+
+    #True if the user is legitimate
+    return hashed_data == hash
+
+#Generates the route for post requests and then checks if hash from client = hash from server
+def	check_tok_post(path, request):
+    path += "?"
+    email = ""
+    hashed_data = ""
+    for key in request.form:
+        if key == "hashedData":
+            hashed_data = request.form[key]
+        elif key == "email":
+            email = request.form[key]
+        else:
+            path += key+"="+request.form[key]+"&"
+
+    path = path[:-1]
+    print("path : "+path)
+    return check_tok(path, email, hashed_data, True)
 
 @app.route('/signup', methods=['POST'])
 def sign_up():
@@ -185,12 +221,14 @@ def change_password():
 
 # Retrieves the stored data for the user whom the passed token is issued for.
 # The currently signed-in user case use this method to retrieve all its own info from the server
-@app.route('/getuserdatabytoken/<token>', methods=['GET'])
-def get_user_data_by_token(token):
-    if database_helper.get_logged_in(token):
-        data = database_helper.get_user_data_by_token(token)
-        if data is not None:
-            return json.dumps({"success": True, "message": "User data retrieved.", "data": data})
+@app.route('/getuserdatabytoken/<mailUser>/<hashedData>', methods=['GET'])
+def get_user_data_by_token(mailUser,hashedData):
+    if database_helper.get_logged_in_by_mail(mailUser):
+        data = database_helper.get_user_data_by_email(mailUser)
+        if check_tok('getuserdatabytoken',mailUser,hashedData,False):
+            if data is not None:
+                return json.dumps({"success": True, "message": "User data retrieved.", "data": data})
+            return json.dumps({"success": False, "message": "No such user."})
         return json.dumps({"success": False, "message": "No such user."})
     return json.dumps({"success": False, "message": "You are not signed in."})
 
@@ -223,70 +261,34 @@ def post_message():
                 token = database_helper.get_token_by_mail(sender)[0]
                 database_helper.post_message(message, token, sender, email)
                 return json.dumps({"success": True, "message": "Message posted."})
-            return json.dumps({"success": True, "message": "Message not posted."})
         else:
-            return json.dumps({"success": False, "message": "No such user."})
+            return json.dumps({"success": False, "message": "Message not posted."})
     else:
         return json.dumps({"success": False, "message": "You are not signed in."})
 
 
 # Retrieves the stored messages for the user whom the passed token is issued for.
 # The currently signed-in user case use this method to retrieve all its own messages from the server.
-@app.route('/getusermessagesbytoken/<token>', methods=['GET'])
-def get_user_messages_by_token(token):
-    if database_helper.get_logged_in(token):
-        data = database_helper.get_user_messages_by_token_db(token)
-        if data is not None:
-            return json.dumps({"success": True, "message": "User messages retrieved.", "data": data})
+@app.route('/getusermessagesbytoken/<mailUser>/<hashedData>', methods=['GET'])
+def get_user_messages_by_token(mailUser,hashedData):
+    if database_helper.get_logged_in_by_mail(mailUser):
+        if check_tok('getusermessagesbytoken',mailUser,hashedData,False):
+            token = database_helper.get_token_by_mail(mailUser)[0]
+            data = database_helper.get_user_messages_by_token_db(token)
+            if data is not None:
+                return json.dumps({"success": True, "message": "User messages retrieved.", "data": data})
         return json.dumps({"success": False, "message": "No such user."})
     return json.dumps({"success": False, "message": "You are not signed in."})
 
 
 # Retrieves the stored messages for the user specified by the passed email address
-@app.route('/getusermessagesbyemail/<token>/<email>', methods=['GET'])
-def get_user_messages_by_email(token, email):
-    if database_helper.get_logged_in(token):
+@app.route('/getusermessagesbyemail/<mailUser>/<email>/<hashedData>', methods=['GET'])
+def get_user_messages_by_email(email,mailUser, hashedData):
+    if database_helper.get_logged_in_by_mail(mailUser):
         if (database_helper.in_users(email)):
-            data = database_helper.get_user_messages_by_email_db(email)
-            return json.dumps({"success": True, "message": "User messages retrieved.", "data": data})
+            if check_tok('getusermessagesbyemail/'+mailUser,email,hashedData,False):
+                data = database_helper.get_user_messages_by_email_db(email)
+                return json.dumps({"success": True, "message": "User messages retrieved.", "data": data})
         return json.dumps({"success": False, "message": "No such user."})
     else:
         return json.dumps({"success": False, "message": "You are not signed in."})
-
-# Checks if hash from client = hash from server
-def check_tok(path,email,hashed_data,post):
-    data = database_helper.get_logged_in_by_mail(email)
-    if data == None:
-        return json.dumps({"success": False, "message": "You are not logged in."})
-    token = data[0]
-    if post:
-        data_to_hash = '/'+path+"&email="+email+"&token="+token
-    else:
-        data_to_hash = '/'+path+'/'+email+'/'+token
-
-    #Encoding data to hash (string) to bytes
-    hash = hashlib.sha256(data_to_hash.encode('utf-8')).hexdigest()
-
-    print("dataToHash: "+data_to_hash)
-    print("hash from client: "+hash)
-    print("hash from server: "+hashed_data)
-
-    #True if the user is legitimate
-    return hashed_data == hash
-
-#Generates the route for post requests and then checks if hash from client = hash from server
-def	check_tok_post(path, request):
-    path += "?"
-    email = ""
-    hashed_data = ""
-    for key in request.form:
-        if key == "hashedData":
-            hashed_data = request.form[key]
-        elif key == "email":
-            email = request.form[key]
-        else:
-            path += key+"="+request.form[key]+"&"
-
-    path = path[:-1]
-    print("path : "+path)
-    return check_tok(path, email, hashed_data, True)
