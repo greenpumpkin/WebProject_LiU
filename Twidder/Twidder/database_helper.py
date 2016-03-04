@@ -79,6 +79,16 @@ def get_logged_in_by_mail(email):
     except sqlite3.Error:
         return False
 
+# Get the token of a logged in user
+def get_token_by_mail(email):
+    db = get_db()
+    cursor = db.cursor()
+    try:
+        request = cursor.execute('SELECT token FROM loggedIn WHERE email=?', (email,))
+        return request.fetchone()
+    except sqlite3.Error:
+        return False
+
 # Checks if a password is valid for a user willing to change it
 def check_pwd(email, password):
     db = get_db()

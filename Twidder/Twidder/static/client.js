@@ -154,11 +154,11 @@ displayMsg = function(message,success,view) {
 	errFrame.style.display = "block";
 	errFrame.innerHTML = message;
 	errFrame.style.backgroundColor = "white";
-	
+
 	if (success == false) {
 		errFrame.style.border = "1px solid red";
 	}
-		
+
 	else if (success == true) {
 		errFrame.style.border = "1px solid black";
 	}
@@ -199,8 +199,6 @@ changePwd = function() {
 	var oldPassword = document.getElementById("oldPwd").value;
 	var newPassword = document.getElementById("chgPwd").value;
     var repPassword = document.getElementById("chgRepPwd").value;
-	var params = "token="+token+"&pwd="+oldPassword+"&chgPwd="+newPassword;
-
 	if (newPassword.length >= sizeMinPwd && newPassword==repPassword) {
 		var xmlhttp = new XMLHttpRequest();
 		xmlhttp.onreadystatechange = function() {
@@ -213,6 +211,13 @@ changePwd = function() {
 				}
 			}
 		};
+
+		/* Protecting bunch of unique data while being transmitted */
+		var params = "pwd="+oldPassword+"&chgPwd="+newPassword+"&email="+localStorage.getItem("email");
+		var dataToHash = "/changepassword?" + params + "&token="+token;
+		var hashedData = CryptoJS.SHA256(dataToHash);
+		params += "&hashedData=" + hashedData;
+		console.log(dataToHash);
 		xmlhttp.open("POST","/changepassword",true);
 		xmlhttp.setRequestHeader("Content-type","application/x-www-form-urlencoded");
 		xmlhttp.send(params);
@@ -267,8 +272,13 @@ send = function(msg,mail,to) {
 			}
         }
 	};
+	/* Protecting bunch of unique data while being transmitted */
+	var params = "message="+msg+"&mail="+mail+"&token="+token;
+	var dataToHash= "/postmessage?"+params;
+	var hashedData = CryptoJS.SHA256(dataToHash);
+	params += "&hashedData="+hashedData;
+	console.log("dataToHash:"+dataToHash)
 
-	var params = "message="+msg+"&token="+token+"&email="+mail;
 	xmlhttp.open("POST","/postmessage",true);
 	xmlhttp.setRequestHeader("Content-type","application/x-www-form-urlencoded");
 	xmlhttp.send(params);
@@ -381,7 +391,7 @@ displayInfoOther = function(email) {
 };
 
 /********************** Enables to search for another user's wall **********************/
-searchSomeone = function() { 
+searchSomeone = function() {
 	var token = localStorage.getItem("token");
 	var email = document.getElementById("mailSearch").value;
 	var xmlhttp = new XMLHttpRequest();

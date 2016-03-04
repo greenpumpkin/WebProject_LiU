@@ -6,6 +6,8 @@ import random
 import json
 from geventwebsocket import WebSocketError
 from flask.ext.bcrypt import Bcrypt
+import hashlib
+import time
 
 #app = Flask(__name__)
 bcrypt = Bcrypt(app)
@@ -161,26 +163,25 @@ def sign_out():
 # Changes the password from the current user to a new one
 @app.route('/changepassword', methods=['POST'])
 def change_password():
-    token = request.form['token']
+    email = request.form['email']
     pwd = request.form['pwd']
     chgpwd = request.form['chgPwd']
-    email = database_helper.get_logged_in(token)[1]
+    #Secure way to transmission of data
+    if check_tok_post('changepassword', request):
+        if not database_helper.get_logged_in_by_mail(email):
+            return json.dumps({'success': False, 'message': "You are not logged in."})
 
-    if not database_helper.get_logged_in(token):
-        return json.dumps({'success': False, 'message': "You are not logged in."})
+        else:
+            if len(chgpwd) < 6:
+                return json.dumps({"success": False, "message": "Error: password must be at least 6 characters long"})
 
-    else:
-        if len(chgpwd) < 6:
-            return json.dumps({"success": False, "message": "Error: password must be at least 6 characters long"})
+            current_password = database_helper.get_user(email)[1]
 
-        current_password = database_helper.get_user(email)[1]
-        print email
-        print current_password
-
-        if bcrypt.check_password_hash(current_password, pwd):
-            database_helper.modify_pwd(email, current_password, bcrypt.generate_password_hash(chgpwd))
-            return json.dumps({"success": True, "message": "Password changed."})
-        return json.dumps({"success": False, "message": "Error : invalid inputs."})
+            if bcrypt.check_password_hash(current_password, pwd):
+                database_helper.modify_pwd(email, current_password, bcrypt.generate_password_hash(chgpwd))
+                return json.dumps({"success": True, "message": "Password changed."})
+            return json.dumps({"success": False, "message": "Error : invalid inputs."})
+    return json.dumps({"success": False, "message": "Error request."})
 
 # Retrieves the stored data for the user whom the passed token is issued for.
 # The currently signed-in user case use this method to retrieve all its own info from the server
@@ -211,13 +212,16 @@ def get_user_data_by_email(token, email):
 @app.route('/postmessage', methods=['POST'])
 def post_message():
     message = request.form['message']
+    email = request.form['mail']
     token = request.form['token']
-    email = request.form['email']
     sender = database_helper.get_email(token)[0]
     if database_helper.get_logged_in(token):
         if database_helper.in_users(email):
-            database_helper.post_message(message, token, sender, email)
-            return json.dumps({"success": True, "message": "Message posted."})
+            #Secure way to transmission of data
+            if check_tok_post("postmessage",request):
+                database_helper.post_message(message, token, sender, email)
+                return json.dumps({"success": True, "message": "Message posted."})
+            return json.dumps({"success": True, "message": "Message not posted."})
         else:
             return json.dumps({"success": False, "message": "No such user."})
     else:
@@ -246,3 +250,41 @@ def get_user_messages_by_email(token, email):
         return json.dumps({"success": False, "message": "No such user."})
     else:
         return json.dumps({"success": False, "message": "You are not signed in."})
+
+# Checks if hash from client = hash from server
+def check_tok(path,email,hashed_data,post):
+    data = database_helper.get_logged_in_by_mail(email)
+    if data == None:
+        return json.dumps({"success": False, "message": "You are not logged in."})
+    token = data[0]
+    if post:
+        data_to_hash = '/'+path+"&email="+email+"&token="+token
+    else:
+        data_to_hash = '/'+path+'/'+email+'/'+token
+
+    #Encoding data to hash (string) to bytes
+    hash = hashlib.sha256(data_to_hash.encode('utf-8')).hexdigest()
+
+    print("dataToHash: "+data_to_hash)
+    print("hash from client: "+hash)
+    print("hash from server: "+hashed_data)
+
+    #True if the user is legitimate
+    return hashed_data == hash
+
+#Generates the route for post requests and then checks if hash from client = hash from server
+def	check_tok_post(path, request):
+    path += "?"
+    email = ""
+    hashed_data = ""
+    for key in request.form:
+        if key == "hashedData":
+            hashed_data = request.form[key]
+        elif key == "email":
+            email = request.form[key]
+        else:
+            path += key+"="+request.form[key]+"&"
+
+    path = path[:-1]
+    print("path : "+path)
+    return check_tok(path, email, hashed_data, True)
