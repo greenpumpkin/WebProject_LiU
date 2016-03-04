@@ -196,14 +196,15 @@ def get_user_data_by_token(token):
 
 
 # Retrieves the stored data for the user specified by the email address
-@app.route('/getuserdatabyemail/<token>/<email>', methods=['GET'])
-def get_user_data_by_email(token, email):
-    if database_helper.get_logged_in(token):
+@app.route('/getuserdatabyemail/<mailUser>/<email>/<hashedData>', methods=['GET'])
+def get_user_data_by_email(email, mailUser, hashedData):
+    if database_helper.get_logged_in_by_mail(mailUser):
         data = database_helper.get_user_data_by_email(email)
-        if data is not None:
-            return json.dumps({"success": True, "message": "User data retrieved.", "data": data})
-        else:
-            return json.dumps({"success": False, "message": "No such user."})
+        if check_tok('getuserdatabyemail/'+mailUser,email,hashedData,False):
+            if data is not None:
+                return json.dumps({"success": True, "message": "User data retrieved.", "data": data})
+            return json.dumps({"success": False, "message": "User data not retrieved.", "data": data})
+        return json.dumps({"success": False, "message": "No such user."})
     else:
         return json.dumps({"success": False, "message": "You are not signed in."})
 
@@ -213,12 +214,13 @@ def get_user_data_by_email(token, email):
 def post_message():
     message = request.form['message']
     email = request.form['mail']
-    token = request.form['token']
-    sender = database_helper.get_email(token)[0]
-    if database_helper.get_logged_in(token):
+    mailUser = request.form['mailUser']
+    sender = mailUser
+    if database_helper.get_logged_in_by_mail(mailUser):
         if database_helper.in_users(email):
             #Secure way to transmission of data
             if check_tok_post("postmessage",request):
+                token = database_helper.get_token_by_mail(sender)[0]
                 database_helper.post_message(message, token, sender, email)
                 return json.dumps({"success": True, "message": "Message posted."})
             return json.dumps({"success": True, "message": "Message not posted."})

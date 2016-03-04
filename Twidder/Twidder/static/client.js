@@ -273,8 +273,8 @@ send = function(msg,mail,to) {
         }
 	};
 	/* Protecting bunch of unique data while being transmitted */
-	var params = "message="+msg+"&mail="+mail+"&token="+token;
-	var dataToHash= "/postmessage?"+params;
+	var params = "message="+msg+"&mail="+mail+"&mailUser="+localStorage.getItem("email");
+	var dataToHash= "/postmessage?"+params+"&token="+token;
 	var hashedData = CryptoJS.SHA256(dataToHash);
 	params += "&hashedData="+hashedData;
 	console.log("dataToHash:"+dataToHash)
@@ -301,7 +301,10 @@ msgOnWall = function(to) {
 		}
 
 		var xmlhttp = new XMLHttpRequest();
-		xmlhttp.open("GET", "/getuserdatabyemail/" + token + "/" + email, true);
+		var mailUser = localStorage.getItem("email");
+		var path = "/getuserdatabyemail/"+mailUser+"/"+email;
+		var hashedData = CryptoJS.SHA256(path + "/" +token);
+		xmlhttp.open("GET", path+"/"+hashedData, true);
 		xmlhttp.send();
 
 		xmlhttp.onreadystatechange = function () {
@@ -373,8 +376,13 @@ keepMsg = function(to) {
 displayInfoOther = function(email) {
 	var token = localStorage.getItem("token");
 	var xmlhttp = new XMLHttpRequest();
-	xmlhttp.open("GET", "/getuserdatabyemail/"+token+"/"+email, true);
+
+	var mailUser = localStorage.getItem("email");
+	var path = "/getuserdatabyemail/"+mailUser+"/"+email;
+	var hashedData = CryptoJS.SHA256(path + "/" +token);
+	xmlhttp.open("GET", path+"/"+hashedData, true);
 	xmlhttp.send();
+
 	xmlhttp.onreadystatechange = function () {
 		if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
 			var rep = JSON.parse(xmlhttp.responseText);
