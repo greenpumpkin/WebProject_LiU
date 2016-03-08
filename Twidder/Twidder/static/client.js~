@@ -196,7 +196,6 @@ tabClicked = function(tab) {
 /********************** Enables a user to change his password **********************/
 changePwd = function() {
 	var token = localStorage.getItem("token");
-	var timestamp = Math.floor(Date.now() / 1000);
 	var oldPassword = document.getElementById("oldPwd").value;
 	var newPassword = document.getElementById("chgPwd").value;
     var repPassword = document.getElementById("chgRepPwd").value;
@@ -215,7 +214,7 @@ changePwd = function() {
 
 		/* Protecting bunch of unique data while being transmitted */
 		var params = "pwd="+oldPassword+"&chgPwd="+newPassword+"&email="+localStorage.getItem("email");
-		var dataToHash = "/changepassword?" + params + "&token="+token+"&timestamp="+timestamp;
+		var dataToHash = "/changepassword?" + params + "&token="+token;
 		var hashedData = CryptoJS.SHA256(dataToHash);
 		params += "&hashedData=" + hashedData;
 		console.log(dataToHash);
@@ -231,12 +230,10 @@ changePwd = function() {
 displayInfo = function() {
 
 	var token = localStorage.getItem("token");
-	var timestamp = Math.floor(Date.now() / 1000);
 	var xmlhttp = new XMLHttpRequest();
 	var mailUser = localStorage.getItem("email");
 	var path = "/getuserdatabytoken/"+mailUser;
-	console.log("data to hash : "+path + "/" +token+"/"+timestamp)
-	var hashedData = CryptoJS.SHA256(path + "/" +token+"/"+timestamp);
+	var hashedData = CryptoJS.SHA256(path + "/" +token);
 
 	console.log("hashedData : "+hashedData)
 	xmlhttp.open("GET", path+"/"+hashedData, true);
@@ -261,7 +258,7 @@ displayInfo = function() {
 send = function(msg,mail,to) {
 
 	var token = localStorage.getItem("token");
-	var timestamp = Math.floor(Date.now() / 1000);
+
 	var xmlhttp = new XMLHttpRequest();
 	xmlhttp.onreadystatechange = function () {
         if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
@@ -283,7 +280,7 @@ send = function(msg,mail,to) {
 	};
 	/* Protecting bunch of unique data while being transmitted */
 	var params = "message="+msg+"&mail="+mail+"&mailUser="+localStorage.getItem("email");
-	var dataToHash= "/postmessage?"+params+"&token="+token+"&timestamp="+timestamp;
+	var dataToHash= "/postmessage?"+params+"&token="+token;
 	var hashedData = CryptoJS.SHA256(dataToHash);
 	params += "&hashedData="+hashedData;
 	console.log("dataToHash:"+dataToHash)
@@ -298,8 +295,6 @@ send = function(msg,mail,to) {
 msgOnWall = function(to) {
 
 	var token = localStorage.getItem("token");
-	var timestamp = Math.floor(Date.now() / 1000);
-
 	var msg = document.getElementById(to).value;
 	var email;
 
@@ -314,7 +309,7 @@ msgOnWall = function(to) {
 		var xmlhttp = new XMLHttpRequest();
 		var mailUser = localStorage.getItem("email");
 		var path = "/getuserdatabyemail/"+mailUser+"/"+email;
-		var hashedData = CryptoJS.SHA256(path + "/" +token+"/"+timestamp);
+		var hashedData = CryptoJS.SHA256(path + "/" +token);
 		xmlhttp.open("GET", path+"/"+hashedData, true);
 		xmlhttp.send();
 
@@ -338,8 +333,6 @@ msgOnWall = function(to) {
 keepMsg = function(to) {
 
 	var token = localStorage.getItem("token");
-	var timestamp = Math.floor(Date.now() / 1000);
-
 	var hashedData;
 	var wall;
 
@@ -347,14 +340,14 @@ keepMsg = function(to) {
 		var xmlhttp = new XMLHttpRequest();
 		if (to == "mess") {
 			wall = document.getElementById("wall");
-			var data = "/getusermessagesbytoken/"+localStorage.getItem("email")+"/"+token+"/"+timestamp;
+			var data = "/getusermessagesbytoken/"+localStorage.getItem("email")+"/"+token;
 			hashedData = CryptoJS.SHA256(data);
 			xmlhttp.open("GET", "/getusermessagesbytoken/"+localStorage.getItem("email")+"/"+hashedData, true);
 		} else if (to == "messUser") {
 			wall = document.getElementById("wallUser")
 			var email = document.getElementById("mailSearch").value;
 			var path = "/getusermessagesbyemail/"+localStorage.getItem("email")+"/"+email;
-			hashedData= CryptoJS.SHA256(path+"/"+token+"/"+timestamp);
+			hashedData= CryptoJS.SHA256(path+"/"+token);
 			xmlhttp.open("GET",path+"/"+hashedData, true);
 		}
 
@@ -373,10 +366,12 @@ keepMsg = function(to) {
 						var para = document.createElement("p");
 						var msg = document.createTextNode("'"+rep.data[j][0]+"' written by : "+rep.data[j][1]);
 						para.appendChild(msg);
+
 						if (to == "mess") {
-                            para.setAttribute("ondragstart", "drag(event)");
+							para.setAttribute("id","drag"+j);
+                            para.setAttribute("ondragstart", "drag(event, 'drag"+j+"')");
 							para.setAttribute("draggable", "true");
-                            para.setAttribute("id","drag"+j);
+                            para.setAttribute("ondragend", "release('drag"+j+"')");
                         }
 						wall.appendChild(para);
 					}
@@ -393,13 +388,11 @@ keepMsg = function(to) {
 /********************** Builds the info of an other user **********************/
 displayInfoOther = function(email) {
 	var token = localStorage.getItem("token");
-	var timestamp = Math.floor(Date.now() / 1000);
-
 	var xmlhttp = new XMLHttpRequest();
 
 	var mailUser = localStorage.getItem("email");
 	var path = "/getuserdatabyemail/"+mailUser+"/"+email;
-	var hashedData = CryptoJS.SHA256(path + "/" +token+"/"+timestamp);
+	var hashedData = CryptoJS.SHA256(path + "/" +token);
 	xmlhttp.open("GET", path+"/"+hashedData, true);
 	xmlhttp.send();
 
@@ -421,12 +414,10 @@ displayInfoOther = function(email) {
 /********************** Enables to search for another user's wall **********************/
 searchSomeone = function() {
 	var token = localStorage.getItem("token");
-	var timestamp = Math.floor(Date.now() / 1000);
-
 	var email = document.getElementById("mailSearch").value;
 	var xmlhttp = new XMLHttpRequest();
 	var path = "/getusermessagesbyemail/"+localStorage.getItem("email")+"/"+email;
-	var hashedData= CryptoJS.SHA256(path+"/"+token+"/"+timestamp);
+	var hashedData= CryptoJS.SHA256(path+"/"+token);
 	xmlhttp.open("GET",path+"/"+hashedData, true);
 	xmlhttp.send();
 
@@ -476,16 +467,34 @@ displayMsgSign = function(message,success) {
 };
 
 /********************** Drag and drop functionality **********************/
-drag = function(ev) {
-	ev.dataTransfer.setData("text", ev.target.id);
+drag = function(ev, dropId) {
+    ev.dataTransfer.setData("text", ev.target.id);
+    var drop = document.getElementById(dropId);
+    var prev = drop.previousElementSibling;
+
+    drop.style.width = prev.offsetWidth;
+    drop.style.height = prev.offsetHeight;
+    drop.style.lineHeight = prev.offsetHeight + "px";
+    prev.style.display = "none";
+    drop.style.display = "block";
 }
+
+release = function(dropId) {
+    var drop = document.getElementById(dropId);
+    var prev = drop.previousElementSibling;
+    drop.style.display = "none";
+	prev.innerHTML = drop(event);
+    prev.style.display = "block";
+};
 
 drop = function(ev) {
 	ev.preventDefault();
-	var data = ev.dataTransfer.getData("text");
-	ev.target.value = document.getElementById(data).innerHTML;
+    var data = ev.dataTransfer.getData("text");
+    ev.target.value = document.getElementById(data).innerHTML;
+	return ev.target.value;
 }
 
 allowDrop = function(ev){
 	ev.preventDefault();
 };
+
