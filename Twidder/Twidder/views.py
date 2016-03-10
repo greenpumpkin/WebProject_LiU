@@ -149,6 +149,7 @@ def sign_in():
 
     if bcrypt.check_password_hash(data_user[1],password):
         token = create_token()
+        hashed_token = hashlib.sha256(token.encode('utf-8')).hexdigest()
 
         if database_helper.get_logged_in_by_mail(email):
             if email in sockets:
@@ -165,7 +166,7 @@ def sign_in():
                     print err
             database_helper.remove_logged_in_by_mail(email)
 
-        database_helper.add_logged_in(token, email)
+        database_helper.add_logged_in(hashed_token, email)
         return json.dumps({'success': True, 'message': "Login successful!", 'token': token, 'email': email})
 
     else:

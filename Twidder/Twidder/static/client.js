@@ -27,6 +27,7 @@ connectSocket = function() {
 
     ws.onopen = function() {
 		console.log("CONNECTION TO SERVER : ESTABLISHED.");
+		//Token hashed for secure connection, cf logIn function
 		var data = {"email" : localStorage.getItem("email"),"token" : localStorage.getItem("token")};
 		ws.send(JSON.stringify(data));
 		console.log(JSON.stringify(data));
@@ -70,7 +71,11 @@ logIn = function() {
 
 				if (rep.success == true) {
 
-                    localStorage.setItem("token", rep.token);
+					var token = rep.token;
+					//Protecting the token
+					var hashedToken = CryptoJS.SHA256(token);
+                    localStorage.setItem("token", hashedToken);
+					console.log("HASHED TOKEN "+hashedToken);
                     localStorage.setItem("email", rep.email);
                     displayView("profileview");
                     connectSocket();
