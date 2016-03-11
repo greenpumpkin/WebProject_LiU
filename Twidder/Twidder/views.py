@@ -37,9 +37,6 @@ def connect_socket():
         rcv = ws.receive()
         data = json.loads(rcv)
         email = data['email']
-        #print "- DATA IS %s" % data
-        if not database_helper.get_logged_in(data['token']):
-            ws.send(json.dumps({"success": False, "message": "Token not in the database !"}))
 
         try:
             #If the user's email is in the sockets dict already

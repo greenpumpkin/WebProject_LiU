@@ -27,7 +27,7 @@ connectSocket = function() {
 
     ws.onopen = function() {
 		console.log("CONNECTION TO SERVER : ESTABLISHED.");
-		var data = {"email" : localStorage.getItem("email"), "token" : localStorage.getItem("token")};
+		var data = {"email" : localStorage.getItem("email")};
 		ws.send(JSON.stringify(data));
 		console.log(JSON.stringify(data));
 	};
