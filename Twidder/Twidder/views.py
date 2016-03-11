@@ -39,35 +39,31 @@ def connect_socket():
         data = json.loads(rcv)
         email = data['email']
 
+        try:
+            #If the user's email is in the sockets dict already
+            if email in sockets:
+                print str(email) + " has an active socket already"
 
-        if not database_helper.get_logged_in(data['token']):
-            ws.send(json.dumps({"success": False, "message": "Token not in the database !"}))
+            #We save the active websocket for the logged in user
+            print "Saving the socket for the user : " + str(email)
+            sockets[str(email)] = ws
+            #print(sockets)
 
-            try:
-                #If the user's email is in the sockets dict already
-                if email in sockets:
-                    print str(email) + " has an active socket already"
+            # We listen on the socket and keep it active
+            while True:
+                rcv = ws.receive()
+                if rcv == None:
+                    del sockets[str(email)]
+                    ws.close()
+                    print "Socket closed for the user : " + str(email)
+                    return ""
 
-                #We save the active websocket for the logged in user
-                print "Saving the socket for the user : " + str(email)
-                sockets[str(email)] = ws
-                #print(sockets)
+        except WebSocketError as err:
+            repr(err)
+            print("WebSocketError !")
+            del sockets[str(email)]
 
-                # We listen on the socket and keep it active
-                while True:
-                    rcv = ws.receive()
-                    if rcv == None:
-                        del sockets[str(email)]
-                        ws.close()
-                        print "Socket closed for the user : " + str(email)
-                        return ""
-
-            except WebSocketError as err:
-                repr(err)
-                print("WebSocketError !")
-                del sockets[str(email)]
-
-        return ""
+    return ""
 
 
 
