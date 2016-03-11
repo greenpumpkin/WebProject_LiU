@@ -38,15 +38,10 @@ def connect_socket():
         rcv = ws.receive()
         data = json.loads(rcv)
         email = data['email']
-        timestamp = int(time.time())
 
-        data_to_hash = '/socketconnect/'+email+'/'+database_helper.get_token_by_mail(email)+"/"+str(timestamp)
-        hash = hashlib.sha256(data_to_hash.encode('utf-8')).hexdigest()
 
-        if check_tok('/socketconnect',email,hash,str(timestamp),False):
-
-            if not database_helper.get_logged_in(data['token']):
-                ws.send(json.dumps({"success": False, "message": "Token not in the database !"}))
+        if not database_helper.get_logged_in(data['token']):
+            ws.send(json.dumps({"success": False, "message": "Token not in the database !"}))
 
             try:
                 #If the user's email is in the sockets dict already
@@ -73,7 +68,7 @@ def connect_socket():
                 del sockets[str(email)]
 
         return ""
-    return json.dumps({"success": False, "message": "Error request."})
+
 
 
 # Checks if hash from client = hash from server
