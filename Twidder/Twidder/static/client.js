@@ -31,7 +31,7 @@ connectSocket = function() {
 
 		var dataToHash = "/socketconnect/" + localStorage.getItem("email") + "/"+ localStorage.getItem("token")+ "/" + timestamp;
     	var hashedData = CryptoJS.SHA256(dataToHash);
-		ws.send(dataToHash);
+		ws.send(hashedData);
 	};
 
 	ws.onmessage = function(msg) {
