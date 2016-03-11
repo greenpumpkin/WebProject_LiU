@@ -38,32 +38,39 @@ def connect_socket():
         rcv = ws.receive()
         data = json.loads(rcv)
         email = data['email']
+        data_to_hash = '/socketconnect/'+email+'/'+database_helper.get_token_by_mail(email)[0]+"/"+str(int(time.time()))
+        hashed_data = hashlib.sha256(data_to_hash.encode('utf-8')).hexdigest()
 
-        try:
-            #If the user's email is in the sockets dict already
-            if email in sockets:
-                print str(email) + " has an active socket already"
+        if check_tok('socketconnect',email,hashed_data,str(int(time.time())),False):
+            if not database_helper.get_logged_in(database_helper.get_token_by_mail(email)[0]):
+                ws.send(json.dumps({"success": False, "message": "Token not in the database !"}))
 
-            #We save the active websocket for the logged in user
-            print "Saving the socket for the user : " + str(email)
-            sockets[str(email)] = ws
-            #print(sockets)
+            try:
+                #If the user's email is in the sockets dict already
+                if email in sockets:
+                    print str(email) + " has an active socket already"
 
-            # We listen on the socket and keep it active
-            while True:
-                rcv = ws.receive()
-                if rcv == None:
-                    del sockets[str(email)]
-                    ws.close()
-                    print "Socket closed for the user : " + str(email)
-                    return ""
+                #We save the active websocket for the logged in user
+                print "Saving the socket for the user : " + str(email)
+                sockets[str(email)] = ws
+                #print(sockets)
 
-        except WebSocketError as err:
-            repr(err)
-            print("WebSocketError !")
-            del sockets[str(email)]
+                # We listen on the socket and keep it active
+                while True:
+                    rcv = ws.receive()
+                    if rcv == None:
+                        del sockets[str(email)]
+                        ws.close()
+                        print "Socket closed for the user : " + str(email)
+                        return ""
 
-    return ""
+            except WebSocketError as err:
+                repr(err)
+                print("WebSocketError !")
+                del sockets[str(email)]
+
+        return ""
+    return json.dumps({"success": False, "message": "Error request."})
 
 
 
