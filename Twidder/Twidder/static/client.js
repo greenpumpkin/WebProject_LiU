@@ -27,8 +27,7 @@ connectSocket = function() {
 
     ws.onopen = function() {
 		console.log("CONNECTION TO SERVER : ESTABLISHED.");
-		//Token hashed for secure connection, cf logIn function
-		var data = {"email" : localStorage.getItem("email"),"token" : localStorage.getItem("token")};
+		var data = {"email" : localStorage.getItem("email"), "token" : localStorage.getItem("token")};
 		ws.send(JSON.stringify(data));
 		console.log(JSON.stringify(data));
 	};
@@ -61,7 +60,13 @@ logIn = function() {
 
 	var username = document.getElementById("emailLog").value;
 	var password = document.getElementById("passwordLog").value;
-	var params = "emailLog="+username+"&passwordLog="+password;
+	var timestamp = Math.floor(Date.now() / 1000);
+
+    /* Protecting data */
+    var params = "passwordLog="+password+"&emailLog="+username;
+    var dataToHash = "/signin?" + params + "&token="+localStorage.getItem("token")+"&timestamp="+timestamp;
+    var hashedData = CryptoJS.SHA256(dataToHash);
+    params += "&hashedData=" + hashedData;
 
 	if (username != null && password != null) {
 		var xmlhttp = new XMLHttpRequest();
@@ -70,12 +75,7 @@ logIn = function() {
 				var rep = JSON.parse(xmlhttp.responseText);
 
 				if (rep.success == true) {
-
-					var token = rep.token;
-					//Protecting the token
-					var hashedToken = CryptoJS.SHA256(token);
-                    localStorage.setItem("token", hashedToken);
-					console.log("HASHED TOKEN "+hashedToken);
+                    localStorage.setItem("token", rep.token);
                     localStorage.setItem("email", rep.email);
                     displayView("profileview");
                     connectSocket();
@@ -85,7 +85,8 @@ logIn = function() {
 				}
 			}
 		};
-		xmlhttp.open("POST", "/signin", true);
+
+        xmlhttp.open("POST", "/signin", true);
 		xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
 		xmlhttp.send(params);
 	}

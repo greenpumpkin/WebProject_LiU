@@ -144,33 +144,35 @@ def sign_in():
     password = request.form['passwordLog']
     data_user = database_helper.get_user(email)
 
-    if data_user == None:
-        return json.dumps({'success': False, 'message': "User doesn't exist."})
+    if check_tok_post('signin', request):
 
-    if bcrypt.check_password_hash(data_user[1],password):
-        token = create_token()
-        hashed_token = hashlib.sha256(token.encode('utf-8')).hexdigest()
+        if data_user == None:
+            return json.dumps({'success': False, 'message': "User doesn't exist."})
 
-        if database_helper.get_logged_in_by_mail(email):
-            if email in sockets:
-                # Removing the other token if the user signs in again
-                try:
-                    ws = sockets[str(email)]
-                    ws.send(json.dumps({'success': False, 'message': "You've been logged out !"}))
-                except WebSocketError as err:
-                    repr(err)
-                    print("WebSocketError !")
-                    #The socket is closed already
-                    del sockets[str(email)]
-                except Exception, err:
-                    print err
-            database_helper.remove_logged_in_by_mail(email)
+        if bcrypt.check_password_hash(data_user[1],password):
+            token = create_token()
 
-        database_helper.add_logged_in(hashed_token, email)
-        return json.dumps({'success': True, 'message': "Login successful!", 'token': token, 'email': email})
+            if database_helper.get_logged_in_by_mail(email):
+                if email in sockets:
+                    # Removing the other token if the user signs in again
+                    try:
+                        ws = sockets[str(email)]
+                        ws.send(json.dumps({'success': False, 'message': "You've been logged out !"}))
+                    except WebSocketError as err:
+                        repr(err)
+                        print("WebSocketError !")
+                        #The socket is closed already
+                        del sockets[str(email)]
+                    except Exception, err:
+                        print err
+                database_helper.remove_logged_in_by_mail(email)
 
-    else:
-        return json.dumps({'success': False, 'message': "User doesn't exist."})
+            database_helper.add_logged_in(token, email)
+            return json.dumps({'success': True, 'message': "Login successful!", 'token': token, 'email': email})
+
+        else:
+            return json.dumps({'success': False, 'message': "User doesn't exist."})
+        return json.dumps({'success': False, 'message': "Error Request."})
 
 # Creates a random token
 def create_token():
