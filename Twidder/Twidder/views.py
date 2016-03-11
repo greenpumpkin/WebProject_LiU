@@ -31,38 +31,50 @@ def start():
 
 @app.route('/socketconnect')
 def connect_socket():
-    #print "- SOMEONE JUST TRIED TO CONNECT"
+    #print "- SOMEONE JUST TRIED TO CONNECT
+
     if request.environ.get('wsgi.websocket'):
         ws = request.environ['wsgi.websocket']
         rcv = ws.receive()
         data = json.loads(rcv)
         email = data['email']
+        timestamp = int(time.time())
 
-        try:
-            #If the user's email is in the sockets dict already
-            if email in sockets:
-                print str(email) + " has an active socket already"
+        data_to_hash = '/socketconnect/'+email+'/'+database_helper.get_token_by_mail(email)+"/"+str(timestamp)
+        hash = hashlib.sha256(data_to_hash.encode('utf-8')).hexdigest()
 
-            #We save the active websocket for the logged in user
-            print "Saving the socket for the user : " + str(email)
-            sockets[str(email)] = ws
-            #print(sockets)
+        if check_tok('/socketconnect',email,hash,str(timestamp),False):
 
-            # We listen on the socket and keep it active
-            while True:
-                rcv = ws.receive()
-                if rcv == None:
-                    del sockets[str(email)]
-                    ws.close()
-                    print "Socket closed for the user : " + str(email)
-                    return ""
+            if not database_helper.get_logged_in(data['token']):
+                ws.send(json.dumps({"success": False, "message": "Token not in the database !"}))
 
-        except WebSocketError as err:
-            repr(err)
-            print("WebSocketError !")
-            del sockets[str(email)]
+            try:
+                #If the user's email is in the sockets dict already
+                if email in sockets:
+                    print str(email) + " has an active socket already"
 
-    return ""
+                #We save the active websocket for the logged in user
+                print "Saving the socket for the user : " + str(email)
+                sockets[str(email)] = ws
+                #print(sockets)
+
+                # We listen on the socket and keep it active
+                while True:
+                    rcv = ws.receive()
+                    if rcv == None:
+                        del sockets[str(email)]
+                        ws.close()
+                        print "Socket closed for the user : " + str(email)
+                        return ""
+
+            except WebSocketError as err:
+                repr(err)
+                print("WebSocketError !")
+                del sockets[str(email)]
+
+        return ""
+    return json.dumps({"success": False, "message": "Error request."})
+
 
 # Checks if hash from client = hash from server
 def check_tok(path,email,hashed_data,timestamp,post):
