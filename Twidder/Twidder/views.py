@@ -36,16 +36,13 @@ def connect_socket():
     if request.environ.get('wsgi.websocket'):
         ws = request.environ['wsgi.websocket']
         rcv = ws.receive()
-        data = json.loads(rcv)
-        email = data['email']
-        timestamp = int(time.time())
+        data = rcv.split('/')
+        email = data[2]
+        hashed_data = hashlib.sha256(str(rcv).encode('utf-8')).hexdigest()
 
-        data_to_hash = '/socketconnect/'+email+'/'+database_helper.get_token_by_mail(email)+"/"+str(timestamp)
-        hash = hashlib.sha256(data_to_hash.encode('utf-8')).hexdigest()
+        if check_tok('socketconnect',email,hashed_data,str(int(time.time())),False):
 
-        if check_tok('/socketconnect',email,hash,str(timestamp),False):
-
-            if not database_helper.get_logged_in(data['token']):
+            if not database_helper.get_logged_in(database_helper.get_token_by_mail(email)[0]):
                 ws.send(json.dumps({"success": False, "message": "Token not in the database !"}))
 
             try:
@@ -73,8 +70,7 @@ def connect_socket():
                 del sockets[str(email)]
 
         return ""
-    return json.dumps({"success": False, "message": "Error request."})
-
+    return json.dumps({'success': False, 'message': "Error Request."})
 
 # Checks if hash from client = hash from server
 def check_tok(path,email,hashed_data,timestamp,post):

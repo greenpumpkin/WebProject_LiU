@@ -24,17 +24,14 @@ window.onload = function() {
 
 connectSocket = function() {
     var ws = new WebSocket("ws://" + document.domain + ":5000/socketconnect");
-	var timestamp = Math.floor(Date.now() / 1000);
 
     ws.onopen = function() {
 		console.log("CONNECTION TO SERVER : ESTABLISHED.");
-		var data = {"email" : localStorage.getItem("email"), "token" : localStorage.getItem("token")};
-		var dataToHash = "/socketconnect?" + "email=" + data['email'] + "&token="+data['token']+"&timestamp="+timestamp;
-    	var hashedData = CryptoJS.SHA256(dataToHash);
-   	 	params += "&hashedData=" + hashedData;
-		ws.send(params);
+		var timestamp = Math.floor(Date.now() / 1000);
 
-		console.log(params);
+		var dataToHash = "/socketconnect/" + localStorage.getItem("email") + "/"+ localStorage.getItem("token")+ "/" + timestamp;
+    	var hashedData = CryptoJS.SHA256(dataToHash);
+		ws.send(dataToHash);
 	};
 
 	ws.onmessage = function(msg) {
