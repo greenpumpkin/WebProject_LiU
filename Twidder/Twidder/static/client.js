@@ -28,7 +28,6 @@ connectSocket = function() {
     ws.onopen = function() {
 		console.log("CONNECTION TO SERVER : ESTABLISHED.");
 		var timestamp = Math.floor(Date.now() / 1000);
-		var params = "email="+localStorage.getItem("email");
 		var dataToHash = "/socketconnect/" + localStorage.getItem("email") + "/"+ localStorage.getItem("token")+ "/" + timestamp;
     	var hashedData = CryptoJS.SHA256(dataToHash);
 		var data = {"email" : localStorage.getItem("email"), "hashedData": hashedData};
