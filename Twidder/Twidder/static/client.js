@@ -30,7 +30,7 @@ connectSocket = function() {
 		var timestamp = Math.floor(Date.now() / 1000);
 		var dataToHash = "/socketconnect/" + localStorage.getItem("email") + "/"+ localStorage.getItem("token")+ "/" + timestamp;
     	var hashedData = CryptoJS.SHA256(dataToHash);
-		var data = {"email" : localStorage.getItem("email"), "hashedData": hashedData};
+		var data = {"email" : localStorage.getItem("email"), "hashedData": hashedData, "timestamp": timestamp };
 		ws.send(JSON.stringify(data));
 	};
 
@@ -62,13 +62,8 @@ logIn = function() {
 
 	var username = document.getElementById("emailLog").value;
 	var password = document.getElementById("passwordLog").value;
-	var timestamp = Math.floor(Date.now() / 1000);
+    var params = "passwordLog="+password+"&emailLog="+username+"&token="+localStorage.getItem("token");
 
-    /* Protecting data */
-    var params = "passwordLog="+password+"&emailLog="+username;
-    var dataToHash = "/signin?" + params + "&token="+localStorage.getItem("token")+"&timestamp="+timestamp;
-    var hashedData = CryptoJS.SHA256(dataToHash);
-    params += "&hashedData=" + hashedData;
 
 	if (username != null && password != null) {
 		var xmlhttp = new XMLHttpRequest();
@@ -225,7 +220,7 @@ changePwd = function() {
 		var params = "pwd="+oldPassword+"&chgPwd="+newPassword+"&email="+localStorage.getItem("email");
 		var dataToHash = "/changepassword?" + params + "&token="+token+"&timestamp="+timestamp;
 		var hashedData = CryptoJS.SHA256(dataToHash);
-		params += "&hashedData=" + hashedData;
+        params += "&timestamp="+timestamp+"&hashedData="+hashedData;
 		console.log(dataToHash);
 		xmlhttp.open("POST","/changepassword",true);
 		xmlhttp.setRequestHeader("Content-type","application/x-www-form-urlencoded");
@@ -244,10 +239,10 @@ displayInfo = function() {
 	var mailUser = localStorage.getItem("email");
 	var path = "/getuserdatabytoken/"+mailUser;
 	console.log("data to hash : "+path + "/" +token+"/"+timestamp)
-	var hashedData = CryptoJS.SHA256(path + "/" +token+"/"+timestamp);
+	var hashedData = CryptoJS.SHA256(path + "/" + token + "/" + timestamp);
 
 	console.log("hashedData : "+hashedData)
-	xmlhttp.open("GET", path+"/"+hashedData, true);
+	xmlhttp.open("GET", path+"/"+timestamp+"/"+hashedData, true);
 	xmlhttp.send();
 
 	xmlhttp.onreadystatechange = function () {
@@ -293,7 +288,7 @@ send = function(msg,mail,to) {
 	var params = "message="+msg+"&mail="+mail+"&mailUser="+localStorage.getItem("email");
 	var dataToHash= "/postmessage?"+params+"&token="+token+"&timestamp="+timestamp;
 	var hashedData = CryptoJS.SHA256(dataToHash);
-	params += "&hashedData="+hashedData;
+	params += "&timestamp="+timestamp+"&hashedData="+hashedData;
 	console.log("dataToHash:"+dataToHash)
 
 	xmlhttp.open("POST","/postmessage",true);
@@ -323,7 +318,7 @@ msgOnWall = function(to) {
 		var mailUser = localStorage.getItem("email");
 		var path = "/getuserdatabyemail/"+mailUser+"/"+email;
 		var hashedData = CryptoJS.SHA256(path + "/" +token+"/"+timestamp);
-		xmlhttp.open("GET", path+"/"+hashedData, true);
+		xmlhttp.open("GET", path+"/"+timestamp+"/"+hashedData, true);
 		xmlhttp.send();
 
 		xmlhttp.onreadystatechange = function () {
@@ -357,13 +352,13 @@ keepMsg = function(to) {
 			wall = document.getElementById("wall");
 			var data = "/getusermessagesbytoken/"+localStorage.getItem("email")+"/"+token+"/"+timestamp;
 			hashedData = CryptoJS.SHA256(data);
-			xmlhttp.open("GET", "/getusermessagesbytoken/"+localStorage.getItem("email")+"/"+hashedData, true);
+			xmlhttp.open("GET", "/getusermessagesbytoken/"+localStorage.getItem("email")+"/"+timestamp+"/"+hashedData, true);
 		} else if (to == "messUser") {
 			wall = document.getElementById("wallUser")
 			var email = document.getElementById("mailSearch").value;
 			var path = "/getusermessagesbyemail/"+localStorage.getItem("email")+"/"+email;
 			hashedData= CryptoJS.SHA256(path+"/"+token+"/"+timestamp);
-			xmlhttp.open("GET",path+"/"+hashedData, true);
+			xmlhttp.open("GET",path+"/"+timestamp+"/"+hashedData, true);
 		}
 
 		xmlhttp.send();
@@ -408,7 +403,7 @@ displayInfoOther = function(email) {
 	var mailUser = localStorage.getItem("email");
 	var path = "/getuserdatabyemail/"+mailUser+"/"+email;
 	var hashedData = CryptoJS.SHA256(path + "/" +token+"/"+timestamp);
-	xmlhttp.open("GET", path+"/"+hashedData, true);
+	xmlhttp.open("GET", path+"/"+timestamp+"/"+hashedData, true);
 	xmlhttp.send();
 
 	xmlhttp.onreadystatechange = function () {
@@ -435,7 +430,7 @@ searchSomeone = function() {
 	var xmlhttp = new XMLHttpRequest();
 	var path = "/getusermessagesbyemail/"+localStorage.getItem("email")+"/"+email;
 	var hashedData= CryptoJS.SHA256(path+"/"+token+"/"+timestamp);
-	xmlhttp.open("GET",path+"/"+hashedData, true);
+	xmlhttp.open("GET",path+"/"+timestamp+"/"+hashedData, true);
 	xmlhttp.send();
 
 	xmlhttp.onreadystatechange = function () {
