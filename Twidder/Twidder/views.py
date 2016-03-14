@@ -42,7 +42,7 @@ def connect_socket():
         hashed_data = data['hashedData']
         timestamp = data['timestamp']
 
-        if check_tok('socketconnect',email,hashed_data,str(timestamp),False):
+        if check_tok('socketconnect',email,hashed_data,str(int(timestamp)),False):
             if not database_helper.get_logged_in(database_helper.get_token_by_mail(email)[0]):
                 ws.send(json.dumps({"success": False, "message": "Token not in the database !"}))
 
