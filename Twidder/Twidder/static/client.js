@@ -29,8 +29,9 @@ connectSocket = function() {
 		console.log("CONNECTION TO SERVER : ESTABLISHED.");
 		var timestamp = Math.floor(Date.now() / 1000);
 		var dataToHash = "/socketconnect/" + localStorage.getItem("email") + "/"+ localStorage.getItem("token")+ "/" + timestamp;
-    	var hashedData = CryptoJS.SHA256(dataToHash);
-		var data = {"email" : localStorage.getItem("email"), "hashedData": hashedData, "timestamp": timestamp };
+    	var hash = CryptoJS.SHA256(dataToHash);
+		var hashedData = hash.toString(CryptoJS.enc.Hex);
+        var data = {"email" : localStorage.getItem("email"), "hashedData": hashedData, "timestamp": timestamp };
 		ws.send(JSON.stringify(data));
 	};
 

@@ -23,11 +23,9 @@ def before_request():
 def teardown_request(exception):
     database_helper.close_db()
 
-
 @app.route('/')
 def start():
     return render_template('client.html')
-
 
 @app.route('/socketconnect')
 def connect_socket():
@@ -40,6 +38,7 @@ def connect_socket():
         #Info received from the client
         email = data['email']
         hashed_data = data['hashedData']
+
         timestamp = data['timestamp']
 
         if check_tok('socketconnect',email,hashed_data,str(int(timestamp)),False):
